@@ -20,4 +20,8 @@ This pipeline builds an expression matrix (exprMatrix.tsv) by downloading and pr
 8. Final Matrix Formatting
 9. Bayesian Model Analysis
 
+## Note:
 
+Due to GitHub's space limitations, the dataset used in this project could not be included in this repository. You can download the required dataset from the following external sources:
+
+https://www.ebi.ac.uk/ena/browser/view/PRJNA589746
