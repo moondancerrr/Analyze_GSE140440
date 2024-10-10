@@ -50,28 +50,29 @@ transposed_expr.tsv: exprMatrix.tsv
 
 # Sort SRR-GSM labels after copying the labels from ena database into SRR-GSM.txt
 sorted-SRR-GSM.txt: SRR-GSM.txt
-	docker run $(SCHIV) grep -oE 'GSM[0-9]+|SRR[0-9]+' SRR-GSM.txt | awk '{if(NR%2) {printf "%s\t", $0} else {print $0}}'>$@
+	$(DOCKER_RUN) grep -oE 'GSM[0-9]+|SRR[0-9]+' SRR-GSM.txt | awk '{if(NR%2) {printf "%s\t", $0} else {print $0}}'>$@
 
 # Label the matrix rows with appropriate treatment based on SRR and GSM tags files copied from GEO and ENA since not provided by the experimenters
 modified_labels.txt: sorted-SRR-GSM.txt descriptions.txt 
-	docker run $(SCHIV) python mapLabels.py
+	$(DOCKER_RUN) python mapLabels.py
 
 # Format final expression matrix
 labeled_exprMatrix.tsv: modified_labels.txt transposed_expr.tsv 
-	docker run $(SCHIV) python map.py
+	$(DOCKER_RUN) python map.py
 
 # Organize the exprMatrix's format. Add cell_type, batch, group, and label columns.
 final_exprMatrix.tsv: labeled_exprMatrix.tsv 
-	docker run $(SCHIV)  Rscript organize_matrix.R
+	$(DOCKER_RUN) Rscript organize_matrix.R
 
 # Use a bayesian model developed in the lab to break the transcriptome in DU145 and PC3 cells when the product of experts is replaced with a linear mixture into 2 modules taking into consideration batch effects. 
 #and to be able to extract the 50 genes with largest weights and be able to plot them using word clouds and to assess their association using Gene Ontology
 K2_BB.pt: final_exprMatrix.tsv
-	docker run --gpus all $(SCHIV) python scripts/blackbox.py 2 $< $@
+	docker run --rm --gpus all -v $$(pwd):/tmp -u$$(id -u):$$(id -g) schiv
+python blackbox.py 2 $< $@
 
 # Extract post-modular localization data from Bayesian model output
 K2_BB_post_mod_loc.tsv: K2_BB.pt
-	docker run $(SCHIV) python extract.py $< $@ param post_mod_loc
+	$(DOCKER_RUN) python extract.py $< $@ param post_mod_loc
 
 QUANT = SRR6519510.quant \
 	SRR6519511.quant \
